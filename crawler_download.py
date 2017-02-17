@@ -232,7 +232,7 @@ def worker(repository_worker, pagesqueue):
 
 
 def main():
-    num_worker_threads = 5
+    num_worker_threads = 1
 
     while True:
 
