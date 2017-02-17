@@ -23,7 +23,7 @@ class DbRepositoryConnect:
         self.conn = pymysql.connect(
             host='localhost',
             user='root',  # Мои настройки для БД
-            password='root',  # Мои настройки для БД
+            password='`1qazxsw2',  # Мои настройки для БД
             db='ratepersons',
             charset='utf8mb4',
             cursorclass=pymysql.cursors.DictCursor)
@@ -102,12 +102,14 @@ class FakeKeywordRepository:
 
     def getkeywordbypersonid(self, personid):
         keywords = [
-            Keyword(ID=1, Name='Путина', PesronID=1),
-            Keyword(ID=2, Name='Путине', PesronID=1),
-            Keyword(ID=3, Name='Путину', PesronID=1),
-            Keyword(ID=4, Name='Медведев', PesronID=2)
+            Keyword(ID=1, Name='Путина', PersonID=1),
+            Keyword(ID=2, Name='Путине', PersonID=1),
+            Keyword(ID=3, Name='Путину', PersonID=1),
+            Keyword(ID=4, Name='Медведев', PersonID=2)
         ]
-        return [item.value for item in keywords if item.value['PersonID'] == personid]
+        for item in keywords:
+            if item.value['PersonID'] == personid:
+                yield item.value
 
 
 class DbKeywordRepository(DbRepositoryConnect):
@@ -118,9 +120,9 @@ class DbKeywordRepository(DbRepositoryConnect):
 
     def getkeywordbypersonid(self, personid):
         sql = "select * from `Keywords` where `Keywords`.`PersonID` = %s"
-        self.cursor.execute(sql, (personid,))
-        result = self.cursor.fetchall()
-        return result
+        self.cursor.execute(sql, (personid, ))      
+        for row in self.cursor:
+            yield row
 
 
 class DbPersonRepository(DbRepositoryConnect):
@@ -132,8 +134,8 @@ class DbPersonRepository(DbRepositoryConnect):
     def getpersons(self):
         sql = "select * from `Persons`"
         self.cursor.execute(sql)
-        result = self.cursor.fetchall()
-        return result
+        for row in self.cursor:
+            yield row
 
 
 class SiteRepositoryWorker:
@@ -143,12 +145,12 @@ class SiteRepositoryWorker:
         self.repository = repository
 
     def getapersons(self):
-        result = [item for item in self.repository.getpersites()]
-        return result
+        for item in self.repository.getpersites():
+            yield item
 
     def getsitestorank(self):
-        result = [item for item in self.repository.getsitestorank()]
-        return result
+        for item in self.repository.getsitestorank():
+            yield item
 
 
 class DbSiteReposytory(DbRepositoryConnect):
@@ -160,14 +162,14 @@ class DbSiteReposytory(DbRepositoryConnect):
     def getsites(self):
         sql = "select * from `Sites`"
         self.cursor.execute(sql)
-        result = self.cursor.fetchall()
-        return result
+        for row in self.cursor:
+            yield row
 
     def getsitestorank(self):
-        sql = 'select * from sites where id not in (select distinct siteid from pages)'
+        sql = 'select * from `Sites` where ID not in (select distinct `SiteID` from `Pages`)'
         self.cursor.execute(sql)
-        result = self.cursor.fetchall()
-        return result
+        for row in self.cursor:
+            yield row
 
 
 class PersonRepositoryWorker:
@@ -177,8 +179,8 @@ class PersonRepositoryWorker:
         self.repository = repository
 
     def getpersons(self):
-        result = [item for item in self.repository.getpersons()]
-        return result
+        for item in self.repository.getpersons():
+            yield item
 
 
 class KeywordRepositoryWorker():
@@ -188,7 +190,8 @@ class KeywordRepositoryWorker():
         self.repository = repository
 
     def getbypersonid(self, personid):
-        return [item for item in self.repository.getkeywordbypersonid(personid)]
+        for item in self.repository.getkeywordbypersonid(personid):
+            yield item
 
 
 class PagesRepositoryWorker:
@@ -198,20 +201,20 @@ class PagesRepositoryWorker:
         self.repository = repository
 
     def getallpages(self):
-        result = [item for item in self.repository.getallpages()]
-        return result
+        for item in self.repository.getallpages():
+            yield item
 
     def getpagesbysiteid(self, siteid):
         for item in self.repository.getpagesbysiteid(siteid):
             yield item
 
     def getsiteidfrompages(self):
-        result = [item for item in self.repository.getsiteidfrompages()]
-        return result
+        for item in self.repository.getsiteidfrompages():
+            yield item
 
     def getpagelastscandatenull(self):
-        result = [item for item in self.repository.getpagelastscandatenull()]
-        return result
+        for item in self.repository.getpagelastscandatenull():
+            yield item
 
     def writepagestostore(self, page):
         self.repository.writepagestostore(page)
@@ -229,8 +232,8 @@ class DbPageRepository(DbRepositoryConnect):
     def getallpages(self):
         sql = "select * from `Pages`"
         self.cursor.execute(sql)
-        result = self.cursor.fetchall()
-        return result
+        for row in self.cursor:
+            yield row
 
     def getpagesbysiteid(self, pageid):
         sql = "select `Url` from `Pages` where `Pages`.`SiteID` = %s"
@@ -239,16 +242,16 @@ class DbPageRepository(DbRepositoryConnect):
             yield row
 
     def getsiteidfrompages(self):
-        sql = "select distinct `siteid` from `Pages`"
+        sql = "select distinct `Siteid` from `Pages`"
         self.cursor.execute(sql)
-        result = self.cursor.fetchall()
-        return result
+        for row in self.cursor:
+            yield row
 
     def getpagelastscandatenull(self):
         sql = "select * from `Pages` where `Pages`.`LastScanDate` is null"
         self.cursor.execute(sql)
-        result = self.cursor.fetchall()
-        return result
+        for row in self.cursor:
+            yield row
 
     def writepagestostore(self, page):
         sql = 'insert into `Pages` (Url, SiteID, FoundDateTime) values (%s, %s, %s)'
@@ -278,7 +281,7 @@ class DbPersonPageRankRepository(DbRepositoryConnect):
         DbRepositoryConnect.__init__(self)
 
     def writeranktostore(self, personpagerank):
-        sql = 'insert into `personpagerank` (personid, pageid, rank) values (%s, %s, %s)'
+        sql = 'insert into `PersonPageRank` (PersonID, PageID, Rank) values (%s, %s, %s)'
         param = (personpagerank.value['PersonID'], personpagerank.value['PageID'], personpagerank.value['Rank'])
         try:
             self.cursor.execute(sql, param)
@@ -308,6 +311,7 @@ class PersonPageRankRepositoryWorker:
 
 
 def main():
+    
     db = DbRepositoryConnect()
 
     repository_dict = {
@@ -326,9 +330,9 @@ def main():
         'personpagerank': PersonPageRankRepositoryWorker(repository_dict['personpagerank'])
     }
 
-    k = DbKeywordRepository()
+    k = FakeKeywordRepository()
     k1 = KeywordRepositoryWorker(k)
-    k2 = k1.getbypersonid(1)
+    k2 = [x for x in k1.getbypersonid(1)]
     print(k2)
 
 

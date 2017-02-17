@@ -130,11 +130,11 @@ def countstatforpage(personworker, keywordworker, tree):
     :param tree: HTML страницы которую анализируем на предмет сколько раз встречается ключевые слова.
     :return: Словаь по персонам с ID персоны и статистика для проанализируемой странице
     """
-    personslist = personworker.getpersons()
+    personslist = [x for x in personworker.getpersons()]
     personsdict = {}
     for person in personslist:
         lst = []
-        keywordslist = keywordworker.getbypersonid(person['ID'])  # GetKeywordByPersonID
+        keywordslist = [x for x in keywordworker.getbypersonid(person['ID'])]  # GetKeywordByPersonID
         if len(keywordslist) > 0:
             for keyword in keywordslist:
                 lst.append(parse.countstat(tree, keyword['Name']))
@@ -232,14 +232,17 @@ def worker(repository_worker, pagesqueue):
 
 
 def main():
-    num_worker_threads = 1
+    num_worker_threads = 4
 
     while True:
 
         repository_worker = reposytory_init()
-        sites = findsitestorank(repository_worker['sites'])
-        writerobotstodb(repository_worker['pages'], sites)
-        pages = pagestowalk(repository_worker['pages'])
+        sites = [x for x in findsitestorank(repository_worker['sites'])]
+
+        if len(sites) > 0:
+            writerobotstodb(repository_worker['pages'], sites)
+
+        pages = [x for x in pagestowalk(repository_worker['pages'])]
 
         if len(pages) > 0:
 
@@ -265,7 +268,7 @@ def main():
         else:
 
             # Наброски для версии 2.0
-            pages = allpages(repository_worker['pages'])
+            pages = [x for x in allpages(repository_worker['pages'])]
             # print(len(pages))
             t = datetime.timedelta(hours=24)
             for page in pages:
