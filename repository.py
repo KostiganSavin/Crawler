@@ -30,65 +30,68 @@ class DbRepositoryConnect:
         self.cursor = self.conn.cursor()
 
 
-class Entity:
+class RepositoryObject:
     """Класс для создания метода представления сущностей"""
+    name = ''
+    objects = {}
 
-    def __init__(self):
-        pass
+    def __init__(self, name):
+        self.name = name
+        RepositoryObject.objects[self.name] = self
 
     @property
     def value(self):
         return self.__dict__
 
 
-class Person(Entity):
+class Person(RepositoryObject):
     """Класс описыввает сущность Person"""
+    name = 'Person'
 
-    def __init__(self, ID=0, Name=None):
-        super(Entity, self).__init__()
-        self.ID = ID
-        self.Name = Name
+    def __init__(self, **kwargs):
+        super(RepositoryObject, self).__init__()
+        for name, value in kwargs.items():
+            setattr(self, name, value)
 
 
-class Keyword(Entity):
+class Keyword(RepositoryObject):
     """Класс описыввает сущность Keyword"""
+    name = 'Keyword'
 
-    def __init__(self, ID=0, Name=None, PersonID=None):
-        super(Entity, self).__init__()
-        self.ID = ID
-        self.Name = Name
-        self.PersonID = PersonID
+    def __init__(self, **kwargs):
+        super(RepositoryObject, self).__init__()
+        for name, value in kwargs.items():
+            setattr(self, name, value)
 
 
-class Site(Entity):
+class Site(RepositoryObject):
     """Класс описыввает сущность Site"""
+    name = 'Site'
 
-    def __init__(self, ID=0, Name=None):
-        super(Entity, self).__init__()
-        self.ID = ID
-        self.Name = Name
+    def __init__(self, **kwargs):
+        super(RepositoryObject, self).__init__()
+        for name, value in kwargs.items():
+            setattr(self, name, value)
 
 
-class Page(Entity):
+class Page(RepositoryObject):
     """Класс описыввает сущность Page"""
+    name = 'Page'
 
-    def __init__(self, ID=0, Url=None, SiteID=0, FoundDateTime=None, LastScanDate=None):
-        super(Entity, self).__init__()
-        self.ID = ID
-        self.Url = Url
-        self.SiteID = SiteID
-        self.FoundDateTime = FoundDateTime
-        self.LastScanDate = LastScanDate
+    def __init__(self, **kwargs):
+        super(RepositoryObject, self).__init__()
+        for name, value in kwargs.items():
+            setattr(self, name, value)
 
 
-class PersonPageRank(Entity):
+class PersonPageRank(RepositoryObject):
     """Класс описыввает сущность PersonPageRank"""
+    name = 'PersonPageRank'
 
-    def __init__(self, PersonID=0, PageID=0, Rank=0):
-        super(Entity, self).__init__()
-        self.PersonID = PersonID
-        self.PageID = PageID
-        self.Rank = Rank
+    def __init__(self, **kwargs):
+        super(RepositoryObject, self).__init__()
+        for name, value in kwargs.items():
+            setattr(self, name, value)
 
 
 class FakeKeywordRepository:
@@ -99,10 +102,10 @@ class FakeKeywordRepository:
 
     def getkeywordbypersonid(self, personid):
         keywords = [
-            Keyword(1, 'Путина', 1),
-            Keyword(2, 'Путине', 1),
-            Keyword(3, 'Путину', 1),
-            Keyword(4, 'Медведев', 2)
+            Keyword(ID=1, Name='Путина', PesronID=1),
+            Keyword(ID=2, Name='Путине', PesronID=1),
+            Keyword(ID=3, Name='Путину', PesronID=1),
+            Keyword(ID=4, Name='Медведев', PesronID=2)
         ]
         return [item.value for item in keywords if item.value['PersonID'] == personid]
 
@@ -112,7 +115,6 @@ class DbKeywordRepository(DbRepositoryConnect):
 
     def __init__(self):
         DbRepositoryConnect.__init__(self)
-
 
     def getkeywordbypersonid(self, personid):
         sql = "select * from `Keywords` where `Keywords`.`PersonID` = %s"
@@ -232,7 +234,7 @@ class DbPageRepository(DbRepositoryConnect):
 
     def getpagesbysiteid(self, pageid):
         sql = "select `Url` from `Pages` where `Pages`.`SiteID` = %s"
-        self.cursor.execute(sql, (pageid, ))
+        self.cursor.execute(sql, (pageid,))
         for row in self.cursor:
             yield row
 
@@ -306,7 +308,6 @@ class PersonPageRankRepositoryWorker:
 
 
 def main():
-
     db = DbRepositoryConnect()
 
     repository_dict = {
