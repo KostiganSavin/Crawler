@@ -119,6 +119,7 @@ class DbKeywordRepository(DbRepositoryConnect):
         DbRepositoryConnect.__init__(self)
 
     def getkeywordbypersonid(self, personid):
+        """Получает записи из БД всех ключевых слов для заданной персоны PersonID"""
         sql = "select * from `Keywords` where `Keywords`.`PersonID` = %s"
         self.cursor.execute(sql, (personid, ))      
         for row in self.cursor:
@@ -132,6 +133,7 @@ class DbPersonRepository(DbRepositoryConnect):
         DbRepositoryConnect.__init__(self)
 
     def getpersons(self):
+        """Получает записи из БД всех станиц из таблицы Persons"""
         sql = "select * from `Persons`"
         self.cursor.execute(sql)
         for row in self.cursor:
@@ -144,11 +146,13 @@ class SiteRepositoryWorker:
     def __init__(self, repository):
         self.repository = repository
 
-    def getapersons(self):
+    def getsites(self):
+        """Получает из БД записи всех станиц из таблицы Sites"""
         for item in self.repository.getpersites():
             yield item
 
     def getsitestorank(self):
+        """Получает из БД записи станиц из таблицы Sites которые отсутствуют в таблице Pages"""
         for item in self.repository.getsitestorank():
             yield item
 
@@ -160,12 +164,14 @@ class DbSiteReposytory(DbRepositoryConnect):
         DbRepositoryConnect.__init__(self)
 
     def getsites(self):
+        """Получает записи из БД всех станиц из таблицы Sites"""
         sql = "select * from `Sites`"
         self.cursor.execute(sql)
         for row in self.cursor:
             yield row
 
     def getsitestorank(self):
+        """Получает из БД записи станиц из таблицы Sites которые отсутствуют в таблице Pages"""
         sql = 'select * from `Sites` where ID not in (select distinct `SiteID` from `Pages`)'
         self.cursor.execute(sql)
         for row in self.cursor:
@@ -179,6 +185,7 @@ class PersonRepositoryWorker:
         self.repository = repository
 
     def getpersons(self):
+        """Получает записи всех станиц из таблицы Persons"""
         for item in self.repository.getpersons():
             yield item
 
@@ -190,6 +197,7 @@ class KeywordRepositoryWorker():
         self.repository = repository
 
     def getbypersonid(self, personid):
+        """Получает записи ключевых слов из таблицы Keywords по заданному PersonID"""
         for item in self.repository.getkeywordbypersonid(personid):
             yield item
 
@@ -201,25 +209,31 @@ class PagesRepositoryWorker:
         self.repository = repository
 
     def getallpages(self):
+        """Получает записи всех станиц из таблицы Pages"""
         for item in self.repository.getallpages():
             yield item
 
     def getpagesbysiteid(self, siteid):
+        """Получает записи станиц из таблицы Pages по заданному SiteID"""
         for item in self.repository.getpagesbysiteid(siteid):
             yield item
 
     def getsiteidfrompages(self):
+        """Получает записи всех уникальных SiteID из таблицы Pages"""
         for item in self.repository.getsiteidfrompages():
             yield item
 
     def getpagelastscandatenull(self):
+        """Получает записи станиц из таблицы Pages которые не разу не сканировались LastScanDate is null"""
         for item in self.repository.getpagelastscandatenull():
             yield item
 
     def writepagestostore(self, page):
+        """Передает данные для записи данных в Pages"""
         self.repository.writepagestostore(page)
 
     def updatepageinstore(self, page):
+        """Передает данные для обновления данных в Pages"""
         self.repository.updatepageinstore(page)
 
 
@@ -230,30 +244,35 @@ class DbPageRepository(DbRepositoryConnect):
         DbRepositoryConnect.__init__(self)
 
     def getallpages(self):
+        """Получает из БД все записи из таблицы Pages"""
         sql = "select * from `Pages`"
         self.cursor.execute(sql)
         for row in self.cursor:
             yield row
 
     def getpagesbysiteid(self, pageid):
+        """Получает из БД записи из таблицы Pages по определенному SiteID"""
         sql = "select `Url` from `Pages` where `Pages`.`SiteID` = %s"
         self.cursor.execute(sql, (pageid,))
         for row in self.cursor:
             yield row
 
     def getsiteidfrompages(self):
+        """Получает из БД список записей с уникальным SiteID из таблицы Pages"""
         sql = "select distinct `Siteid` from `Pages`"
         self.cursor.execute(sql)
         for row in self.cursor:
             yield row
 
     def getpagelastscandatenull(self):
+        """Получает из БД список записей из таблицы Pages где """
         sql = "select * from `Pages` where `Pages`.`LastScanDate` is null"
         self.cursor.execute(sql)
         for row in self.cursor:
             yield row
 
     def writepagestostore(self, page):
+        """Записывает в БД в таблицу Pages данные по найденной ссылке на страницу"""
         sql = 'insert into `Pages` (Url, SiteID, FoundDateTime) values (%s, %s, %s)'
         param = (page.value['Url'], page.value['SiteID'], page.value['FoundDateTime'])
         try:
@@ -264,6 +283,7 @@ class DbPageRepository(DbRepositoryConnect):
             self.conn.rollback()
 
     def updatepageinstore(self, page):
+        """Обновляет запись в БД по заданной Pages после анализа таблицы и задает время сканирования страницы"""
         sql = 'update `Pages` set `LastScanDate`=%s where `Pages`.`ID` = %s'
         param = (page.value['LastScanDate'], page.value['ID'])
         try:
@@ -281,6 +301,7 @@ class DbPersonPageRankRepository(DbRepositoryConnect):
         DbRepositoryConnect.__init__(self)
 
     def writeranktostore(self, personpagerank):
+        """Записывает в БД статистику Rank упомнинания персоны PersonID на проаналлизированной странице PagesID"""
         sql = 'insert into `PersonPageRank` (PersonID, PageID, Rank) values (%s, %s, %s)'
         param = (personpagerank.value['PersonID'], personpagerank.value['PageID'], personpagerank.value['Rank'])
         try:
@@ -307,6 +328,7 @@ class PersonPageRankRepositoryWorker:
         self.repository = repository
 
     def writeranktostore(self, personpagerank):
+        """Передает данные для записи статитстики в PersonPageRank"""
         self.repository.writeranktostore(personpagerank)
 
 
